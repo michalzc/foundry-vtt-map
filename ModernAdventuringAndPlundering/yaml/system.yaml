@@ -1,0 +1,10 @@
+name: MAP
+title: Modern Adventuring & Plundering
+description: FoundryVTT system for MAP
+templateVersion: 2
+author: Michał Z.
+esmodules:
+  - modules/map.js
+styles:
+  - css/map.css
+minimumCoreVersion: 9
