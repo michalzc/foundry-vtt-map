@@ -6,6 +6,7 @@ import mill.api.Result.{Exception, OuterStack, Success}
 import mill.scalajslib.ScalaJSModule
 import mill.scalalib._
 import mill.contrib.versionfile.VersionFileModule
+import os.RelPath
 
 object versionFile extends VersionFileModule
 
@@ -18,13 +19,13 @@ object ModernAdventuringAndPlundering extends ScalaJSModule {
     ivy"com.outr::scribe_sjs1:3.8.0",
   )
 
-  val yamlSourceDir = millSourcePath / "yaml"
-  def yamlSources   = T.sources(yamlSourceDir)
+  val yamlSourceDir             = millSourcePath / "yaml"
+  val moduleYamls: Seq[PathRef] = List("system.yaml", "template.yaml").map(yamlSourceDir / _).map(PathRef(_)).filter(_.path.toIO.isFile)
 
-  def allJsons = T {
+  def moduleJsons = T {
     yaml
-      .doYaml(yamlSources(), yamlSourceDir, T.dest, versionFile.currentVersion().toString())
-      .fold[Result[Seq[PathRef]]](
+      .doYaml(moduleYamls, yamlSourceDir, T.dest, versionFile.currentVersion().toString())
+      .fold[Result[Seq[(PathRef, String)]]](
         e => Exception(e, new OuterStack(Seq.empty)),
         l => Success(l),
       )
@@ -32,19 +33,25 @@ object ModernAdventuringAndPlundering extends ScalaJSModule {
 
   def devBuild = T {
     val report = fastLinkJS()
-    val jsFiles: Seq[PathRef] = report.publicModules.toList.flatMap(module =>
-      List(Option(report.dest.path / module.jsFileName), module.sourceMapName.map(sm => report.dest.path / sm)).flatten.map(PathRef(_)),
+    val jsFiles: Seq[(PathRef, String)] = report.publicModules.toList.flatMap(module =>
+      List(Option(report.dest.path / module.jsFileName), module.sourceMapName.map(sm => report.dest.path / sm)).flatten
+        .map(PathRef(_))
+        .map(p => p -> s"modules/${p.path.last}"),
     )
-    val allFiles = jsFiles ++ resources() ++ allJsons()
 
-    allFiles.foreach(println)
+    val res = resources().flatMap(p => os.walk(p.path).filter(_.toIO.isFile).map(rp => (PathRef(rp), rp.relativeTo(p.path).toString())))
 
+    jsFiles ++ res ++ moduleJsons()
   }
 
 }
 
 def devBuild = T {
-  val outDest = T.dest
-  ModernAdventuringAndPlundering.devBuild()
-  println(outDest)
+  val elements = ModernAdventuringAndPlundering.devBuild()
+  val outDir   = T.dest
+  elements.map { case (path, destPath) =>
+    val fullDestPath = outDir / RelPath(destPath)
+    os.copy(path.path, fullDestPath, createFolders = true)
+    PathRef(fullDestPath)
+  }
 }
