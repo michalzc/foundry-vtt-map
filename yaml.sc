@@ -9,7 +9,7 @@ import cats.instances.list._
 import io.circe.{Json, ParsingFailure}
 import io.circe.syntax._
 
-def doYaml(sources: Seq[PathRef], basePath: Path, dest: Path, version: String): Either[ParsingFailure, List[(PathRef, String)]] = {
+def doYaml(sources: Seq[PathRef], basePath: Path, dest: Path, version: String): Either[ParsingFailure, List[(Path, String)]] = {
 
   def setVersion(baseName: String, json: Json, version: String): Json = baseName match {
     case "system" => json.deepMerge(Map("version" -> version).asJson)
@@ -22,9 +22,9 @@ def doYaml(sources: Seq[PathRef], basePath: Path, dest: Path, version: String): 
     .traverse { case (filePath, json) =>
       val baseName = filePath.baseName
       val outName  = s"$baseName.json"
-      val outPath  = PathRef(dest / s"$baseName.json")
+      val outPath  = dest / s"$baseName.json"
       json.map { json =>
-        os.write(outPath.path, setVersion(baseName, json, version).spaces2)
+        os.write(outPath, setVersion(baseName, json, version).spaces2)
         outPath -> outName
       }
     }

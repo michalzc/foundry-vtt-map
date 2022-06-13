@@ -39,6 +39,7 @@ Item:
     templates:
       - base
     damage: "1d6"
+    require: ""
   talent:
     templates:
       - base
