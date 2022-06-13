@@ -1,10 +1,18 @@
-name: MAP
+name: maap
 title: Modern Adventuring & Plundering
 description: FoundryVTT system for MAP
-templateVersion: 2
 author: Michał Z.
 esmodules:
   - modules/main.js
-styles:
-  - css/map.css
-minimumCoreVersion: 9
+minimumCoreVersion: 0.9.0
+compatibleCoreVersion: "9"
+packs: []
+styles: []
+dependencies: []
+scripts: []
+languages: []
+socket: false
+protected: false
+url: www.someurlinfuture.com
+manifest: www.someurlinfuture.com
+download: www.someurlinfuture.com

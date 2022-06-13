@@ -15,16 +15,17 @@ object ModernAdventuringAndPlundering extends ScalaJSModule {
   def scalaJSVersion = "1.10.0"
 
   override def ivyDeps = Agg(
-    ivy"michalzc.foundry::foundry-vtt-types-scala_sjs1:0.1.0-SNAPSHOT",
-    ivy"com.outr::scribe_sjs1:3.8.0",
+    ivy"michalzc.foundry::foundry-vtt-types-scala_sjs1:0.1.0-SNAPSHOT"
   )
 
-  val yamlSourceDir             = millSourcePath / "yaml"
-  val moduleYamls: Seq[PathRef] = List("system.yaml", "template.yaml").map(yamlSourceDir / _).map(PathRef(_)).filter(_.path.toIO.isFile)
+  def yamlSourceDir = T.sources { millSourcePath / "yaml" }
+  def moduleYamls = T {
+    yamlSourceDir().flatMap(p => os.walk(p.path)).map(PathRef(_))
+  }
 
   def moduleJsons = T {
     yaml
-      .doYaml(moduleYamls, yamlSourceDir, T.dest, versionFile.currentVersion().toString())
+      .doYaml(moduleYamls(), yamlSourceDir().head.path, T.dest, versionFile.currentVersion().toString())
       .fold[Result[Seq[(PathRef, String)]]](
         e => Exception(e, new OuterStack(Seq.empty)),
         l => Success(l),

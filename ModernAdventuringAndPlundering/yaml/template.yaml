@@ -1,0 +1,53 @@
+Actor:
+  types:
+    - pc
+    - monster
+  templates:
+    -
+      base:
+        description: ""
+        hp: 10
+        def: 10
+  pc:
+    templates:
+      - base
+    xp: 0
+    attributes:
+      str: 0
+      dex: 0
+      wis: 0
+      cha: 0
+
+Item:
+  types:
+    - weapon
+    - talent
+    - armour
+    - item
+    - spell
+    - talent
+  templates:
+    -
+      base:
+        description: ""
+    -
+      equipment:
+        cost: 0
+        weight: 0
+
+  weapon:
+    templates:
+      - base
+    damage: "1d6"
+  talent:
+    templates:
+      - base
+  item:
+    templates:
+      - base
+  spell:
+    templates:
+      - base
+  armour:
+    templates:
+      - base
