@@ -6,6 +6,8 @@ import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{fastLinkJS, scalaJSLinker
 import sbt.Keys._
 import sbt.io.Path.{flat, rebase}
 import sbt.{AutoPlugin, Def, File, taskKey, _}
+import _root_.io.circe.yaml.parser
+import _root_.io.circe.Json
 
 object DistPlugin extends AutoPlugin {
   override def requires = ScalaJSPlugin
@@ -15,11 +17,11 @@ object DistPlugin extends AutoPlugin {
     lazy val devDist                  = taskKey[Seq[(File, File)]]("Prepare local version of system to include in FoundryVTT")
     lazy val devDistOutput            = settingKey[File]("Location for development dist output")
     lazy val yamlSourceDirectory      = settingKey[File]("Source directory with YAML files")
-    lazy val systemYaml               = settingKey[File]("The main system file in YAML format")
     lazy val distOutputDirectory      = settingKey[File]("Location for distribution output")
     lazy val distBuildOptputDirectory = settingKey[File]("Location for distribution build directory")
     lazy val distFile                 = settingKey[File]("Location for distribution file")
     lazy val distSystemFile           = settingKey[File]("Location for distribution system file")
+    lazy val mainYamlFilter           = settingKey[FileFilter]("Filter for main yaml files (template and system)")
   }
 
   import autoImport._
@@ -28,17 +30,37 @@ object DistPlugin extends AutoPlugin {
 
     inConfig(Compile)(
       Seq(
-        devDist                  := buildTask(fastLinkJS, devDistOutput, "dev-dist").value,
+        devDist                  := buildTask(fastLinkJS, devDistOutput, "dev-dist").value ++ buildMainJsonsTask(devDistOutput, "dev-dist").value,
         devDistOutput            := target.value / s"${moduleName.value}-dev",
         yamlSourceDirectory      := sourceDirectory.value / "yaml",
-        systemYaml               := yamlSourceDirectory.value / "system.yaml",
         distOutputDirectory      := target.value / s"${moduleName.value}",
         distBuildOptputDirectory := distOutputDirectory.value / "build",
         distFile                 := distOutputDirectory.value / s"${moduleName.value}.zip",
         distSystemFile           := distOutputDirectory.value / s"${moduleName.value}.json",
-      ),
+        mainYamlFilter           := "system.yaml" | "template.yaml",
+        ),
     )
   }
+
+  def setVersion(version: String)(json: Json) =
+      json.hcursor.downField("version").withFocus(_.mapString(_ => version)).top.getOrElse(json)
+
+  def buildMainJsonsTask(outputDirectory: SettingKey[File], name: String) =
+    Def.task {
+      val yamlFiles = (yamlSourceDirectory.value * mainYamlFilter.value).get
+      val mappedFiles = yamlFiles.map { file =>
+        val jsonContent = IO.reader(file)(parser.parse).map(setVersion(version.value)).map(_.spaces2) match {
+          case Left(error) => throw error
+          case Right(js) => js
+        }
+        val outFile = outputDirectory.value / file.getName.replace(".yaml", ".json")
+        IO.write(outFile, jsonContent)
+        file -> outFile
+      }
+      val cacheStore = streams.value.cacheStoreFactory make s"${name}-main-yamls"
+      Sync.sync(cacheStore)(mappedFiles)
+      mappedFiles
+    }
 
   def buildTask(link: TaskKey[Attributed[Report]], outputDirectory: SettingKey[File], name: String) =
     Def.task {
