@@ -6,7 +6,10 @@ Actor:
     -
       base:
         description: ""
-        hp: 10
+        hp:
+          value: 0
+          max: 10
+          min: 0
         def: 10
   pc:
     templates:
