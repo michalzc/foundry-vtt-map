@@ -3,23 +3,28 @@ Actor:
     - pc
     - monster
   templates:
-    -
-      base:
-        description: ""
+    baseActor:
+      stats:
         hp:
           value: 0
           max: 10
           min: 0
         def: 10
+      attributes:
+        str: 0
+        dex: 0
+        wis: 0
+        cha: 0
   pc:
     templates:
-      - base
+      - baseActor
     xp: 0
-    attributes:
-      str: 0
-      dex: 0
-      wis: 0
-      cha: 0
+    bio: ""
+
+  monster:
+    templates:
+      - baseActor
+    description: ""
 
 Item:
   types:
@@ -30,31 +35,31 @@ Item:
     - spell
     - talent
   templates:
-    -
-      base:
-        description: ""
-    -
-      equipment:
-        cost: 0
-        weight: 0
+    baseItem:
+      description: ""
+    equipment:
+      cost: 0
+      weight: 0
 
   weapon:
     templates:
-      - base
+      - baseItem
       - equipment
     damage: "1d6"
-    tags: []
+    tags: [ ]
   talent:
     templates:
-      - base
+      - baseItem
   item:
     templates:
-      - base
+      - baseItem
       - equipment
   spell:
     templates:
-      - base
+      - baseItem
   armour:
     templates:
-      - base
+      - baseItem
       - equipment
+    defBonus: 0
+    tags: []
