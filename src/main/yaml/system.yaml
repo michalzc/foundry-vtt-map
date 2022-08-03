@@ -4,7 +4,7 @@ title: Modern Adventuring & Plundering
 description: FoundryVTT system for MAP
 author: Michał Z.
 esmodules:
-  - modules/main.js
+  - main.js
 minimumCoreVersion: 0.9.0
 compatibleCoreVersion: "9"
 packs: []
