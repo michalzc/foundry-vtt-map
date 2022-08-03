@@ -1,6 +1,6 @@
 package michalzc.foundry.maap
 
-import foundryvtt.Hooks
+import foundryvtt.{Actor, Hooks}
 import foundryvtt.collection.{Actors, SheetOptions}
 import foundryvtt.forms.ActorSheet
 import foundryvtt.global.config.CONFIG
@@ -18,8 +18,7 @@ object MAaP extends App {
     CONFIG.Actor.documentClass = js.constructorOf[MaapActor]
     CONFIG.Item.documentClass = js.constructorOf[MaapItem]
 
-    Actors.unregisterSheet("core", js.constructorOf[ActorSheet[Any]])
-//    Actors.registerSheet("maap", js.constructorOf[Maap])
+    Actors.unregisterSheet("core", js.constructorOf[ActorSheet[Any, Actor[Any]]])
     Actors.registerSheet("maap", js.constructorOf[MaapActorSheet], buildSheetOpts("MA&P Sheet", "pc"))
 
     logger.info("Initialized!")

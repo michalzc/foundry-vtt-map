@@ -7,7 +7,7 @@ import scala.scalajs.js
 import scala.scalajs.js.annotation.{JSExportStatic, JSExportTopLevel}
 
 @JSExportTopLevel("MaapActor")
-class MaapActor(data: ActorData[MapActorData], context: js.UndefOr[DocumentModificationContext]) extends Actor(data, context){
+class MaapActor(data: ActorData[MaapActorData], context: js.UndefOr[DocumentModificationContext]) extends Actor(data, context){
 
 }
 

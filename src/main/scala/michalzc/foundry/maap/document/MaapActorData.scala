@@ -6,7 +6,7 @@ import scala.scalajs.js.annotation.JSName
 import scalajs.js
 
 @js.native
-trait MapActorData extends js.Object {
+trait MaapActorData extends js.Object {
   def hp: IntAttribute = js.native
 
   @JSName("def")
