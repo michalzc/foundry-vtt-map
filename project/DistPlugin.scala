@@ -22,6 +22,8 @@ object DistPlugin extends AutoPlugin {
     lazy val distFile                 = settingKey[File]("Location for distribution file")
     lazy val distSystemFile           = settingKey[File]("Location for distribution system file")
     lazy val mainYamlFilter           = settingKey[FileFilter]("Filter for main yaml files (template and system)")
+    lazy val buildJsons               = taskKey[Seq[File]]("Transform YAML files for dev")
+    lazy val buildJsonsDir            = settingKey[File]("Directory for transformed YAML files")
   }
 
   import autoImport._
@@ -30,7 +32,8 @@ object DistPlugin extends AutoPlugin {
 
     inConfig(Compile)(
       Seq(
-        devDist                  := buildTask(fastLinkJS, devDistOutput, "dev-dist").value ++ buildMainJsonsTask(devDistOutput, "dev-dist").value,
+        buildJsons               := buildMainJsonsTask.value,
+        devDist                  := buildTask(fastLinkJS, devDistOutput, "dev-dist").value,
         devDistOutput            := target.value / s"${moduleName.value}-dev",
         yamlSourceDirectory      := sourceDirectory.value / "yaml",
         distOutputDirectory      := target.value / s"${moduleName.value}",
@@ -38,28 +41,26 @@ object DistPlugin extends AutoPlugin {
         distFile                 := distOutputDirectory.value / s"${moduleName.value}.zip",
         distSystemFile           := distOutputDirectory.value / s"${moduleName.value}.json",
         mainYamlFilter           := "system.yaml" | "template.yaml",
-        ),
+        buildJsonsDir            := target.value / "json",
+      ),
     )
   }
 
   def setVersion(version: String)(json: Json) =
-      json.hcursor.downField("version").withFocus(_.mapString(_ => version)).top.getOrElse(json)
+    json.hcursor.downField("version").withFocus(_.mapString(_ => version)).top.getOrElse(json)
 
-  def buildMainJsonsTask(outputDirectory: SettingKey[File], name: String) =
+  def buildMainJsonsTask =
     Def.task {
       val yamlFiles = (yamlSourceDirectory.value * mainYamlFilter.value).get
-      val mappedFiles = yamlFiles.map { file =>
+      yamlFiles.map { file =>
         val jsonContent = IO.reader(file)(parser.parse).map(setVersion(version.value)).map(_.spaces2) match {
           case Left(error) => throw error
-          case Right(js) => js
+          case Right(js)   => js
         }
-        val outFile = outputDirectory.value / file.getName.replace(".yaml", ".json")
+        val outFile = buildJsonsDir.value / file.getName.replace(".yaml", ".json")
         IO.write(outFile, jsonContent)
-        file -> outFile
+        outFile
       }
-      val cacheStore = streams.value.cacheStoreFactory make s"${name}-main-yamls"
-      Sync.sync(cacheStore)(mappedFiles)
-      mappedFiles
     }
 
   def buildTask(link: TaskKey[Attributed[Report]], outputDirectory: SettingKey[File], name: String) =
@@ -69,9 +70,9 @@ object DistPlugin extends AutoPlugin {
         List(Option(jsOutDir / module.jsFileName), module.sourceMapName.map(jsOutDir / _))
       }.flatten
       val lessOutDir                      = (Assets / less / resourceManaged).value
-      val files                           = (Assets / less).value ++ resources.value ++ scripts
+      val files                           = (Assets / less).value ++ resources.value ++ scripts ++ buildJsons.value
       val t                               = outputDirectory.value
-      val dirs                            = (lessOutDir +: jsOutDir +: resourceDirectories.value).toSet
+      val dirs                            = (buildJsonsDir.value +: lessOutDir +: jsOutDir +: resourceDirectories.value).toSet
       val s                               = streams.value
       val cacheStore                      = s.cacheStoreFactory make name
       val flt: File => Option[File]       = flat(t)
